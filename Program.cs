@@ -6,6 +6,21 @@ namespace PwGen
 {
 	class Program
 	{
+		private static int TryParseCount(in List<string> args, out int count)
+		{
+			if (int.TryParse(args[1], out count))
+			{
+				if (count < 1)
+				{
+					return 2;
+				}
+			}
+			else
+			{
+				return 1;
+			}
+			return 0;
+		}
 		private static void ShowUsage()
 		{
 			Console.Error.WriteLine(@"Usage: csgen <options> <password-lengths>
@@ -88,18 +103,14 @@ where OPTION's is:
 								flags ^= Flag.Special;
 								break;
 							case "repeat":
-								if (int.TryParse(args[1], out count))
+								switch (TryParseCount(args, out count))
 								{
-									if (count < 1)
-									{
+									case 1:
+										Console.Error.WriteLine("Error: invalid number: \"{0}\"", args[1]);
+										return 8;
+									case 2:
 										Console.Error.WriteLine("Error: count cannot be zero or negative");
 										return 10;
-									}
-								}
-								else
-								{
-									Console.Error.WriteLine("Error: invalid number: \"{0}\"", args[1]);
-									return 8;
 								}
 								args.RemoveAt(1);
 								break;
@@ -159,18 +170,14 @@ where OPTION's is:
 									flags ^= Flag.Special;
 									break;
 								case 't':
-									if (int.TryParse(args[1], out count))
+									switch (TryParseCount(args, out count))
 									{
-										if (count < 1)
-										{
+										case 1:
+											Console.Error.WriteLine("Error: invalid number: \"{0}\"", args[1]);
+											return 11;
+										case 2:
 											Console.Error.WriteLine("Error: count cannot be zero or negative");
 											return 12;
-										}
-									}
-									else
-									{
-										Console.Error.WriteLine("Error: invalid number: \"{0}\"", args[1]);
-										return 11;
 									}
 									args.RemoveAt(1);
 									break;
