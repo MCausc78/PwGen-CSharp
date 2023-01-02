@@ -6,9 +6,24 @@ namespace PwGen
 {
 	class Program
 	{
-		private static int TryParseCount(in List<string> args, out int count)
+		public static byte EncodeVersion(byte major, byte minor)
 		{
-			if (int.TryParse(args[1], out count))
+			if ((major > (byte)16) || (minor > (byte)16))
+			{
+				throw new ArgumentException("major/minor is 4-bit");
+			}
+			return (byte) ((major << 4) | (byte)minor);
+		}
+		public static (byte, byte) DecodeVersion(byte version) =>
+			((byte)(version >> 0x04), (byte)(version & 0x0F));
+		public static readonly byte ProgramVersion = EncodeVersion((byte)1, (byte)2);
+		private static int TryParseCount(in string arg, out int count) =>
+			int.TryParse(arg, out count)
+				? count < 1
+					? 2
+					: 0
+				: 1;
+			/*if (int.TryParse(arg, out count))
 			{
 				if (count < 1)
 				{
@@ -19,28 +34,41 @@ namespace PwGen
 			{
 				return 1;
 			}
-			return 0;
-		}
+			return 0;*/
 		private static void ShowUsage()
 		{
-			Console.Error.WriteLine(@"Usage: csgen <options> <password-lengths>
+			Console.Error.WriteLine(@"Usage: pwgen <options> <password-lengths>
 
 where OPTION's is:
+	-?, -h, --help, --usage	Shows this menu
 	-a, --all		Same as -duls
 	-c, --custom		Allows to specify zero flags
 	-D, --default		Same as -dul
 	-d, --digits		Include digits in passwords (0-9)
 	-e, --exclude STR	Exclude custom characters
-	-?, -h, --help, --usage	Shows this menu
 	-i, --include STR	Includes custom characters
-	-u, --upper		Include uppercase ASCII in passwords (A-Z)
 	-l, --lower		Include lowercase ASCII in passwords (a-z)
-	-r, --remove-lvowels	Excludes lowercase vowels (excludes aeiou)
-	-R, --remove-uvowels	Excludes uppercase vowels (excludes AEIOU)
 	-s, --special		Include special symbols in passwords (!@#$%^&*())
 	-t, --repeat N		Same as ""csgen <flags> <length N times>""
 				Warning: ""repeat"" will use first length for all passwords!
+	-u, --upper		Include uppercase ASCII in passwords (A-Z)
+	-w, --remove-lvowels	Excludes lowercase vowels (excludes aeiou)
+	-W, --remove-uvowels	Excludes uppercase vowels (excludes AEIOU)
+	-v, --version			Show the version
+
+example:
+	`pwgen -a 16`:		generate password of length 16 with all characters
+	`pwgen -i aeiou 10`:	generate password with only lowercase vowels
+	`pwgen -Dt5 10`:	generate 5 passwords of length 10 with default characters
+	`pwgen -DW 32`:		generate password of length 32 without uppercase vowels
 ");
+		}
+		public static void ShowVersion()
+		{
+			(byte major, byte minor) = DecodeVersion(ProgramVersion);
+			Console.WriteLine(@"Version: {0}.{1}
+OS: ""{2}""
+CLR version: ""{3}""", major, minor, Environment.OSVersion.ToString(), Environment.Version.ToString());
 		}
 		static int Main(string[] argv)
 		{
@@ -79,11 +107,11 @@ where OPTION's is:
 								exclude = args[1];
 								args.RemoveAt(1);
 								break;
-							case "help":
 							case "include":
 								include = args[1];
 								args.RemoveAt(1);
 								break;
+							case "help":
 							case "usage":
 								ShowUsage();
 								return 1;
@@ -102,8 +130,11 @@ where OPTION's is:
 							case "special":
 								flags ^= Flag.Special;
 								break;
+							case "version":
+								ShowVersion();
+								return 0;
 							case "repeat":
-								switch (TryParseCount(args, out count))
+								switch (TryParseCount(args[1], out count))
 								{
 									case 1:
 										Console.Error.WriteLine("Error: invalid number: \"{0}\"", args[1]);
@@ -126,8 +157,12 @@ where OPTION's is:
 						{
 							continue;
 						}
+						bool exitLoop = false;
+						int i = 0;
 						foreach (char ch in arg)
 						{
+							if (exitLoop)
+								break;
 							switch (ch)
 							{
 								case 'a':
@@ -143,16 +178,32 @@ where OPTION's is:
 									flags ^= Flag.Digits;
 									break;
 								case 'e':
-									exclude = args[1];
-									args.RemoveAt(1);
+									if ((i + 1) == arg.Length)
+									{
+										exclude = args[1];
+										args.RemoveAt(1);
+									}
+									else
+									{
+										exclude = arg.Substring(i);
+										exitLoop = true;
+									}
 									break;
 								case '?':
 								case 'h':
 									ShowUsage();
 									return 1;
 								case 'i':
-									include = args[1];
-									args.RemoveAt(1);
+									if ((i + 1) == arg.Length)
+									{
+										include = args[1];
+										args.RemoveAt(1);
+									}
+									else
+									{
+										include = arg.Substring(i);
+										exitLoop = true;
+									}
 									break;
 								case 'u':
 									flags ^= Flag.Upper;
@@ -160,32 +211,46 @@ where OPTION's is:
 								case 'l':
 									flags ^= Flag.Lower;
 									break;
-								case 'R':
-									exclude += "AEIOU";
-									break;
-								case 'r':
-									exclude += "aeiou";
-									break;
 								case 's':
 									flags ^= Flag.Special;
 									break;
 								case 't':
-									switch (TryParseCount(args, out count))
+									if ((i + 1) == arg.Length)
+									{
+										arg = args[1];
+										args.RemoveAt(1);
+									}
+									else
+									{
+										arg = arg.Substring(i);
+										exitLoop = true;
+									}
+									switch (TryParseCount(arg, out count))
 									{
 										case 1:
-											Console.Error.WriteLine("Error: invalid number: \"{0}\"", args[1]);
+											Console.Error.WriteLine("Error: invalid number: \"{0}\"", arg);
 											return 11;
 										case 2:
 											Console.Error.WriteLine("Error: count cannot be zero or negative");
 											return 12;
 									}
-									args.RemoveAt(1);
+									break;
+								case 'v':
+									ShowVersion();
+									return 0;
+								case 'w':
+									exclude += "aeiou";
+									break;
+								case 'W':
+									exclude += "AEIOU";
 									break;
 								default:
 									Console.Error.WriteLine("Error: Unknown option '{0}'", ch);
 									return 5;
 							}
+							++i;
 						}
+						
 					}
 					else
 					{

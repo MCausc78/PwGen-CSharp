@@ -56,7 +56,7 @@ namespace PwGen
 			{
 				return this.Generate(Flag.None, length, "", "");
 			}
-			for (int i = 0; i < length; i++)
+			for (int i = 0; i < length; ++i)
 			{
 				sb.Append(alphabet[RNG.Next(alphabetLength)]);
 			}
