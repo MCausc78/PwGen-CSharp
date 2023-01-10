@@ -49,7 +49,7 @@ where OPTION's is:
 	-i, --include STR	Includes custom characters
 	-l, --lower		Include lowercase ASCII in passwords (a-z)
 	-s, --special		Include special symbols in passwords (!@#$%^&*())
-	-t, --repeat N		Same as ""csgen <flags> <length N times>""
+	-r, --repeat N		Same as ""csgen <flags> <length N times>""
 				Warning: ""repeat"" will use first length for all passwords!
 	-u, --upper		Include uppercase ASCII in passwords (A-Z)
 	-w, --remove-lvowels	Excludes lowercase vowels (excludes aeiou)
@@ -59,7 +59,7 @@ where OPTION's is:
 example:
 	`pwgen -a 16`:		generate password of length 16 with all characters
 	`pwgen -i aeiou 10`:	generate password with only lowercase vowels
-	`pwgen -Dt5 10`:	generate 5 passwords of length 10 with default characters
+	`pwgen -Dr5 10`:	generate 5 passwords of length 10 with default characters
 	`pwgen -DW 32`:		generate password of length 32 without uppercase vowels
 ");
 		}
@@ -214,7 +214,7 @@ CLR version: ""{3}""", major, minor, Environment.OSVersion.ToString(), Environme
 								case 's':
 									flags ^= Flag.Special;
 									break;
-								case 't':
+								case 'r':
 									if ((i + 1) == arg.Length)
 									{
 										arg = args[1];
@@ -222,7 +222,7 @@ CLR version: ""{3}""", major, minor, Environment.OSVersion.ToString(), Environme
 									}
 									else
 									{
-										arg = arg.Substring(i);
+										arg = arg.Substring(i + 1);
 										exitLoop = true;
 									}
 									switch (TryParseCount(arg, out count))
