@@ -10,31 +10,19 @@ namespace PwGen
 		{
 			if ((major > (byte)16) || (minor > (byte)16))
 			{
-				throw new ArgumentException("major/minor is 4-bit");
+				throw new ArgumentException("major and minor must be 4-bit");
 			}
 			return (byte) ((major << 4) | (byte)minor);
 		}
 		public static (byte, byte) DecodeVersion(byte version) =>
 			((byte)(version >> 0x04), (byte)(version & 0x0F));
-		public static readonly byte ProgramVersion = EncodeVersion((byte)1, (byte)2);
+		public static readonly byte ProgramVersion = EncodeVersion((byte)1, (byte)3);
 		private static int TryParseCount(in string arg, out int count) =>
 			int.TryParse(arg, out count)
 				? count < 1
 					? 2
 					: 0
 				: 1;
-			/*if (int.TryParse(arg, out count))
-			{
-				if (count < 1)
-				{
-					return 2;
-				}
-			}
-			else
-			{
-				return 1;
-			}
-			return 0;*/
 		private static void ShowUsage()
 		{
 			Console.Error.WriteLine(@"Usage: pwgen <options> <password-lengths>
